@@ -9,7 +9,7 @@
 // Any JavaScript value can be returned from the `source` function, save for
 // `null` which terminates the polling.
 
-const pollingInterval = 50; // ms
+const pollingInterval = 1000; // ms
 
 // Some asynchronous function
 const source = input => Promise.resolve(input.toUpperCase());
@@ -20,39 +20,35 @@ const sink = letter => {
   return String.fromCharCode(letter.charCodeAt(0) + 1);
 };
 
-// Called when polling terminates.
-const done = outputs => {
-  console.log(`Resolved: ${outputs}`);
-};
-
-const poll = (source, sink, done, interval) => {
-  const after = (interval, callback, ...args) =>
-    setTimeout(callback, interval, ...args);
+const poll = (source, sink, initialValue, interval) => {
 
   const outputs = [];
 
-  const cycle = start => out => {
-    if (out === null) {
-      done(outputs);
-    } else {
-      after(interval, start, ...out);
-    }
+  const store = output => {
+    outputs.push(output);
+    return output;
   };
 
-  const store = out => {
-    outputs.push(out);
-    return out;
-  };
-
-  return function start(...args) {
-    source(...args)
+  const cycle = (promise, sink, done) => {
+    promise
       .then(store)
       .then(sink)
-      .then(cycle(start));
+      .then(
+        input =>
+          input === null
+            ? done(outputs)
+            : setTimeout(cycle, interval, source(input), sink, done)
+      );
   };
+
+  return new Promise(resolve => {
+    cycle(source(initialValue), sink, resolve);
+  });
 };
 
-const run = poll(source, sink, done, pollingInterval);
-
 const initialValue = 'a';
-run(initialValue);
+const run = poll(source, sink, initialValue, pollingInterval);
+
+run.then(outputs => {
+  console.log(`Resolved: ${outputs}`);
+});

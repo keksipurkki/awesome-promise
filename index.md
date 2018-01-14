@@ -58,7 +58,10 @@ the errors should be merely logged and discarded.
 When a basic fork-join approach overwhelms the available resources, we
 can overcome the limitations by first grouping the inputs into batches
 and working with bigger "chunks" of the inputs. Batching reduces the
-overhead associated with starting and completing a single task.
+overhead associated with starting and completing a single task. In
+networking context, when the size of request headers outweighs the
+request body, common sense dictates that more time is spent on
+transmitting metadata than actual data.
 
 If the cost of the workload is O(N(o + W)), where N is the number of
 tasks, W is work proper and o is the overhead per task, batching the
@@ -66,10 +69,7 @@ inputs into k groups reduces the cost to O(ko + NW). Batch processing
 also opens up the avenue for other performance improvements. As a
 general guideline, modern CPUs are at their best when they are given
 sufficiently big and deterministic workloads with good data and time
-locality characteristics. Similarly, in networking context, when the
-size of request headers outweighs the request body, common sense
-dictates that more time is spent on transmitting metadata than actual
-data.
+locality characteristics. 
 
 In typical web development scenario, batch processing requires support
 from the back-end. This poses no problem when working with databases --
