@@ -1,8 +1,10 @@
 const inputs = 'abcdefghijklmnopqrstuvwxyz'.split('');
-const throttleThreshold = 3; // calls/s
+const throttleThreshold = 5; // calls/s
 
 let callCount = 0;
 
+const apply = (acc, val) => acc.then(val);
+const compose = (...funcs) => x => funcs.reduce(apply, Promise.resolve(x));
 
 const rateLimit = threshold => {
   const start = +new Date();
@@ -19,7 +21,7 @@ const coolOff = rateLimit(throttleThreshold);
 function throttled(f) {
   return (...args) => {
     ++callCount;
-    return new Promise(resolve => setTimeout(resolve, coolOff(), f(...args)));
+    return new Promise(resolve => setTimeout(compose(f, resolve), coolOff(), ...args));
   };
 }
 
@@ -27,10 +29,13 @@ const randomTime = (min = 0, max = 1000) => () => {
   return Math.random()*(max - min) + min;
 };
 
-const sleep = randomTime(0, 3000);
+const sleep = randomTime(0, 0);
 
 // Some asynchronous function
-const fun = input => new Promise(resolve => setTimeout(resolve, sleep(), input.toUpperCase()));
+const fun = input => {
+  console.log(`I was invoked with ${input}`);
+  return new Promise(resolve => setTimeout(resolve, sleep(), input.toUpperCase()));
+};
 
 const toc = +new Date();
 Promise.all(inputs.map(throttled(fun)))
