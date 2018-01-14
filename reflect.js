@@ -6,26 +6,40 @@ const inputs = 'abcdefghijklmnopqrstuvwxyz'.split('');
 // Asynchronous function with some invalid inputs
 const fun = input =>
   input.match(/[abcde]/)
-    ? Promise.reject(input)
+    ? Promise.reject(new Error('Invalid input'))
     : Promise.resolve(input.toUpperCase());
 
-const toRejection = e => ({fulfilled: false, value: e});
-const toFulfilment = o => ({fulfilled: true, value: o});
+const reject = (error, input) => ({fulfilled: false, input, error});
+const fulfill = value => ({fulfilled: true, value});
 const isFulfilled = o => o.fulfilled;
 
 const partition = (a, predicate) => {
   const out = [[], []];
-  a.forEach(o => out[Number(!!predicate(o))].push(o.value));
+  a.forEach(o => out[Number(!!predicate(o))].push(o));
   return out;
 };
 
-const reflect = promise => promise.then(toFulfilment).catch(toRejection);
+const reflect = (f, input) =>
+  f(input)
+    .then(fulfill)
+    .catch(error => reject(error, input));
 
-Promise.all(inputs.map(fun).map(reflect))
-  .then(outputs => partition(outputs, isFulfilled))
-  .then(([rejected, resolved]) => {
-    // Rejected: a,b,c,d,e
-    console.log(`Rejected: ${rejected}`);
-    // Resolved: F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z
-    console.log(`Resolved: ${resolved}`);
-  });
+const unreflect = ([rejected, resolved]) => {
+  resolved = resolved.map(r => r.value);
+  rejected = rejected.map(({input, error}) => ({input, error}));
+  return [rejected, resolved];
+};
+
+function exec(f, inputs) {
+  return Promise.all(inputs.map(input => reflect(f, input)))
+    .then(outputs => partition(outputs, isFulfilled))
+    .then(unreflect);
+}
+
+exec(fun, inputs).then(([rejected, resolved]) => {
+  // Rejected: a,b,c,d,e
+  console.log(`Rejected: ${rejected.map(r => r.input)}`);
+  console.log(`Errors: ${rejected.map(r => r.error.message)}`);
+  // Resolved: F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z
+  console.log(`Resolved: ${resolved}`);
+});

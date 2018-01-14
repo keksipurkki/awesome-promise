@@ -80,7 +80,7 @@ of a POST request to `/api/cat`, you would submit a request to
 `/api/cats/`. When it comes to 3rd party APIs, your mileage will
 obviously vary.
 
-### Throttle-Queue
+### Queue-throttle
 
 There are times when we want to have guaranteed control over
 computational resources. This situation occurs when we cannot control
